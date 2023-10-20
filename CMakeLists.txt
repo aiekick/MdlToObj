@@ -16,6 +16,12 @@ project(
 
 set(CMAKE_CXX_STANDARD 17)
 
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -std=c++17 -Wunused-parameter -Wno-unknown-pragmas")
+endif ()
+
 add_executable(MdlToObj main.cpp MdlToObj.hpp)
 	
 if ("${CMAKE_EXE_LINKER_FLAGS}" STREQUAL "/machine:x64")
