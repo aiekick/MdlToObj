@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(MdlToObj)
+set(PROJECT MdlToObj)
+set(ORGANIZATION_NAME "FunParadigm")
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 1)
+set(PROJECT_VER ${VERSION_MAJOR}.${VERSION_MINOR})
+
+enable_language(C CXX)
+
+project(
+	${PROJECT} 
+	VERSION ${PROJECT_VER} 
+	LANGUAGES CXX
+)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -9,20 +21,23 @@ add_executable(MdlToObj main.cpp MdlToObj.hpp)
 set(FINAL_BIN_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_INSTALL_PREFIX "${FINAL_BIN_DIR}")
 
+set(${PROJECT}_OUTPUT_NAME "${PROJECT}_${CMAKE_SYSTEM_NAME}_$<$<CONFIG:Debug>:Debug>$<$<CONFIG:Release>:Release>$<$<CONFIG:MinSizeRel>:MinSizeRel>$<$<CONFIG:RelWithDebInfo>:RelWithDebInfo>_${ARCH}")
+set_target_properties(${PROJECT} PROPERTIES	OUTPUT_NAME "${${PROJECT}_OUTPUT_NAME}")
+set_target_properties(${PROJECT} PROPERTIES	RUNTIME_OUTPUT_DIRECTORY "${FINAL_BIN_DIR}")
+set_target_properties(${PROJECT} PROPERTIES	RUNTIME_OUTPUT_DIRECTORY_DEBUG "${FINAL_BIN_DIR}")
+set_target_properties(${PROJECT} PROPERTIES	RUNTIME_OUTPUT_DIRECTORY_RELEASE "${FINAL_BIN_DIR}")
+
 #############################################################
 ### INSTALL #################################################
 #############################################################
 
-install(TARGETS MdlToObj RUNTIME DESTINATION / COMPONENT APP_BINARY)
+install(TARGETS ${PROJECT} RUNTIME DESTINATION / COMPONENT APP_BINARY)
 
 #############################################################
 ### PACKAGE #################################################
 ## https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Component-Install-With-CPack
 #############################################################
 
-set(ORGANIZATION_NAME "FunParadigm")
-set(VERSION_MAJOR 0)
-set(VERSION_MINOR 1)
 
 set(CPACK_GENERATOR "ZIP")
 set(CPACK_MONOLITHIC_INSTALL 1)
@@ -33,12 +48,12 @@ endif()
 set(CPACK_ZIP_COMPONENT_INSTALL ON)
 set(CPACK_PACKAGE_VENDOR ${ORGANIZATION_NAME})
 set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE 1)
-set(CPACK_PACKAGE_VERSION_MAJOR "0")
-set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_NAME "MdlToObj")
-set(CPACK_PACKAGE_FILE_NAME "MdlToObj")
+set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${VERSION_MINOR})
+set(CPACK_PACKAGE_NAME ${PROJECT})
+set(CPACK_PACKAGE_FILE_NAME ${PROJECT})
 set(CPACK_COMPONENT_APPLICATIONS_DISPLAY_NAME "${PROJECT}")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "MdlToObj")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME ${PROJECT})
 SET(CPACK_OUTPUT_FILE_PREFIX "${CMAKE_INSTALL_PREFIX}/")
 set(CPACK_PACKAGE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
 
