@@ -68,4 +68,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: MdlToObj_Linux
-        path: "bin/MdlToObj.zip"
+        path: "bin/*.zip"
