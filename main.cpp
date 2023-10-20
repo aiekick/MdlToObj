@@ -28,9 +28,9 @@ SOFTWARE.
 int main(int argc, char** argv) {
     std::string file_path_name_to_open;
     std::string file_path_name_to_save;
-    if (argc > 1U) {
+    if (argc > 1) {
         file_path_name_to_open = std::string(argv[1]);
-        if (argc > 2U) {
+        if (argc > 2) {
             file_path_name_to_save = std::string(argv[2]);
         }
     }

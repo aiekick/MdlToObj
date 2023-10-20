@@ -33,7 +33,6 @@ SOFTWARE.
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <filesystem>
 #include <unordered_map>
 
 #define MDL_TO_OBJ_VERSION "0.1"
@@ -468,7 +467,7 @@ private:
                 } else {
                     count_faces = tokens[0];
                 }
-                if (count_faces == (tokens.size() - offset)) {  // check than face is ok
+                if (count_faces == ((int32_t)tokens.size() - offset)) {  // check than face is ok
                     Face face;
                     size_t count = tokens.size() - 1U;
                     size_t face_id = 0U;
