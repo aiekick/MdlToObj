@@ -28,6 +28,7 @@ SOFTWARE.
 #include <array>
 #include <string>
 #include <vector>
+#include <cassert>
 #include <cstdarg>
 #include <fstream>
 #include <sstream>
@@ -38,8 +39,6 @@ SOFTWARE.
 #define MDL_TO_OBJ_VERSION "0.1"
 
 // OBJ file format : https://en.wikipedia.org/wiki/Wavefront_.obj_file
-
-namespace fs = std::filesystem;
 
 typedef std::array<double, 2U> UV;
 typedef std::array<double, 3U> Vertex;
@@ -88,9 +87,9 @@ private:
 
 public:
     bool openMdlFile(const std::string& vFile) {
-        if (fs::exists(vFile)) {
+        if (m_isFileExist(vFile)) {
             m_SourceFilePathName = vFile;
-            auto source = loadFileToString(vFile);
+            auto source = m_loadFileToString(vFile);
             if (!source.empty()) {
                 size_t start_line = 0U;
                 size_t end_line = source.find('\n');
@@ -111,29 +110,29 @@ public:
                 std::string surface_name;
                 while (end_line != std::string::npos) {
                     auto line = source.substr(start_line, end_line - start_line);
-                    replaceString(line, "\n", "");
-                    replaceString(line, "\r", "");
-                    replaceString(line, "\t", "");
+                    m_replaceString(line, "\n", "");
+                    m_replaceString(line, "\r", "");
+                    m_replaceString(line, "\t", "");
                     if (mesh_found) {
-                        if (getValueForKey(line, "NumPolys ", num_faces)) {
+                        if (m_getValueForKey(line, "NumPolys ", num_faces)) {
                             data_found = false;
                             model.faces.reserve(num_faces);  // for speed up next push_back
                             std::cout << "Faces section found" << std::endl;
-                        } else if (getValueForKey(line, "NumVerts ", num_verts)) {
+                        } else if (m_getValueForKey(line, "NumVerts ", num_verts)) {
                             model.vertices.reserve(num_verts);  // for speed up next push_back
                         } else if (data_found) {
                             if (uv_found) {
-                                if (getVertexUV(line, vertex, uv)) {
+                                if (m_getVertexUV(line, vertex, uv)) {
                                     model.vertices.push_back(vertex);
                                     model.uvs.push_back(uv);
                                     ++num_uvs;
                                 }
                             } else {
-                                if (getVertex(line, vertex)) {
+                                if (m_getVertex(line, vertex)) {
                                     model.vertices.push_back(vertex);
                                 }
                             }
-                        } else if (isKeyExist(line, "EndPolygonMesh")) {
+                        } else if (m_isKeyExist(line, "EndPolygonMesh")) {
                             if (num_verts) {
                                 std::cout << "Count Vertex : " << num_verts << std::endl;
                             }
@@ -146,48 +145,48 @@ public:
                             mesh_found = false;
                             polys_found = false;
                             m_Models.push_back(model);
-                        } else if (isKeyExist(line, "EndTexture")) {
+                        } else if (m_isKeyExist(line, "EndTexture")) {
                             texture_found = false;
-                        } else if (isKeyExist(line, "Texture")) {
+                        } else if (m_isKeyExist(line, "Texture")) {
                             texture_found = true;
                         } else if (polys_found) {
                             /*if (getFace(line, face)) {
                                 model.faces.push_back(face);
-                            } else */ if (getFaces(line, model.faces)) {
+                            } else */ if (m_getFaces(line, model.faces)) {
                             }
                         } else if (texture_found) {
-                            if (getValueForKey(line, "FRGB ", model.mat.ka_texture)) {
+                            if (m_getValueForKey(line, "FRGB ", model.mat.ka_texture)) {
                                 std::cout << "Ka texture found : " << model.mat.ka_texture << std::endl;
                             }
-                        } else if (getValueForKey(line, "FaceColor %", model.mat.Ka)) {
-                        } else if (getValueForKey(line, "FaceEmissionColor %", model.mat.Ke)) {
-                        } else if (getValueForKey(line, "SmoothShading ", smooth_shading)) {
+                        } else if (m_getValueForKey(line, "FaceColor %", model.mat.Ka)) {
+                        } else if (m_getValueForKey(line, "FaceEmissionColor %", model.mat.Ke)) {
+                        } else if (m_getValueForKey(line, "SmoothShading ", smooth_shading)) {
                             model.smooth_shading = (smooth_shading != "No");
-                        } else if (getValueForKey(line, "Shininess ", model.mat.Ns)) {
-                        } else if (getValueForKey(line, "Translucency ", model.mat.d)) {
-                        } else if (getValueForKey(line, "Specularity ", model.mat.Ks[0])) {
+                        } else if (m_getValueForKey(line, "Shininess ", model.mat.Ns)) {
+                        } else if (m_getValueForKey(line, "Translucency ", model.mat.d)) {
+                        } else if (m_getValueForKey(line, "Specularity ", model.mat.Ks[0])) {
                             model.mat.Ks[1] = model.mat.Ks[0];
                             model.mat.Ks[2] = model.mat.Ks[0];
-                        } else if (isKeyExist(line, "Polys")) {
+                        } else if (m_isKeyExist(line, "Polys")) {
                             polys_found = true;
-                        } else if (isKeyExist(line, "DataTx")) {
+                        } else if (m_isKeyExist(line, "DataTx")) {
                             data_found = true;
                             uv_found = true;
                             std::cout << "Vertices/Uvs section found" << std::endl;
-                        } else if (isKeyExist(line, "Data")) {
+                        } else if (m_isKeyExist(line, "Data")) {
                             data_found = true;
                             std::cout << "Vertices section found" << std::endl;
                         }
-                    } else if (getValueForKey(line, "Component ", component_name)) {
-                    } else if (getValueForKey(line, "Surface: ", surface_name)) {
-                    } else if (isKeyExist(line, "PolygonMesh")) {
+                    } else if (m_getValueForKey(line, "Component ", component_name)) {
+                    } else if (m_getValueForKey(line, "Surface: ", surface_name)) {
+                    } else if (m_isKeyExist(line, "PolygonMesh")) {
                         auto name = component_name;
                         if (!surface_name.empty() && surface_name != component_name) {
                             name += "_" + surface_name;
                         }
                         uint32_t idx = 0U;
                         while (m_Components.find(name) != m_Components.end()) {
-                            name = toStr("%s_%u", component_name.c_str(), idx++);
+                            name = m_toStr("%s_%u", component_name.c_str(), idx++);
                         }
                         m_Components.emplace(name);
                         mesh_found = true;
@@ -216,54 +215,73 @@ public:
         bool res = false;
         std::string filePathNames[2];  // 0: obj file, 1: mtl file
         if (vFile.empty()) {
-            auto file = fs::path(m_SourceFilePathName);
-            file.replace_extension(".obj");
-            filePathNames[0] = file.string();
-            file.replace_extension(".mtl");
-            filePathNames[1] = file.string();
+            filePathNames[0] = m_replaceFileNameExt(m_SourceFilePathName, ".obj");
+            filePathNames[1] = m_replaceFileNameExt(m_SourceFilePathName, ".mtl");
         } else {
-            auto file = fs::path(vFile);
-            file.replace_extension(".obj");
-            filePathNames[0] = file.string();
-            file.replace_extension(".mtl");
-            filePathNames[1] = file.string();
+            filePathNames[0] = m_replaceFileNameExt(vFile, ".obj");
+            filePathNames[1] = m_replaceFileNameExt(vFile, ".mtl");
         }
 
         ///////////////////////////////////
         //// write mtl file ///////////////
         ///////////////////////////////////
 
-        std::string mtl_header = toStr(u8R"(# MTL File generated with MdlToObj from a STK/MDL file
+        std::string mtl_header = m_toStr(u8R"(# MTL File generated with MdlToObj from a STK/MDL file
 # MdlToObj : https://github.com/aiekick/MdlToObj
 )");
         auto mtl_file_output = mtl_header;
         for (const auto& model : m_Models) {
-            mtl_file_output += getObjMaterialString(model.mat);
+            mtl_file_output += m_getObjMaterialString(model.mat);
         }
-        saveStringToFile(mtl_file_output, filePathNames[1]);
+        m_saveStringToFile(mtl_file_output, filePathNames[1]);
 
         ///////////////////////////////////
         //// write obj file ///////////////
         ///////////////////////////////////
 
-        std::string obj_header = toStr(u8R"(# OBJ File generated with MdlToObj from a STK/MDL file
+        std::string obj_header = m_toStr(u8R"(# OBJ File generated with MdlToObj from a STK/MDL file
 # MdlToObj : https://github.com/aiekick/MdlToObj
 )");
         auto obj_file_output = obj_header;
         uint32_t vertices_offset = 0U;
         uint32_t uvs_offset = 0U;
         for (const auto& model : m_Models) {
-            obj_file_output += getObjModelString(model, fs::path(filePathNames[1]).filename().string(), vertices_offset, uvs_offset);
+            obj_file_output += m_getObjModelString(model, m_getFileName(filePathNames[1]), vertices_offset, uvs_offset);
             vertices_offset += (uint32_t)model.vertices.size();
             uvs_offset += (uint32_t)model.uvs.size();
         }
-        saveStringToFile(obj_file_output, filePathNames[0]);
+        m_saveStringToFile(obj_file_output, filePathNames[0]);
 
         return res;
     }
 
 private:
-    static bool strToIntT(const std::string& vStr, int32_t& outValue) {
+    static std::string m_replaceFileNameExt(const std::string& vFilePathName, const std::string& vNewExt) {
+        assert(!vFilePathName.empty());
+        auto lastDot = vFilePathName.find_last_of('.');
+        if (lastDot == std::string::npos) {
+            return vFilePathName;
+        }
+        auto pathWithoutExtension = vFilePathName.substr(0, lastDot);
+        return pathWithoutExtension + vNewExt;
+    }
+    static std::string m_getFileName(const std::string& vFilePathName) {
+        assert(!vFilePathName.empty());
+        auto lastSlash = vFilePathName.find_last_of("/\\");
+        if (lastSlash == std::string::npos) {
+            return vFilePathName;
+        }
+        return vFilePathName.substr(lastSlash + 1);
+    }
+    static bool m_isFileExist(const std::string& vFilePathName) {
+        std::ifstream docFile(vFilePathName, std::ios::in);
+        if (docFile.is_open()) {
+            docFile.close();
+            return true;
+        }
+        return false;
+    }
+    static bool m_strToIntT(const std::string& vStr, int32_t& outValue) {
         try {
             outValue = std::stoi(vStr);
             return true;
@@ -272,7 +290,7 @@ private:
         }
         return false;
     }
-    static bool strToSizeT(const std::string& vStr, size_t& outValue) {
+    static bool m_strToSizeT(const std::string& vStr, size_t& outValue) {
         try {
             outValue = (size_t)std::stoul(vStr);
             return true;
@@ -281,7 +299,7 @@ private:
         }
         return false;
     }
-    static bool strToDouble(const std::string& vStr, double& outValue) {
+    static bool m_strToDouble(const std::string& vStr, double& outValue) {
         try {
             outValue = std::stod(vStr);
             return true;
@@ -290,7 +308,7 @@ private:
         }
         return false;
     }
-    static bool getValueForKey(const std::string& vSrc, const std::string& vKey, std::string& vOutStrValue) {
+    static bool m_getValueForKey(const std::string& vSrc, const std::string& vKey, std::string& vOutStrValue) {
         if (!vSrc.empty()) {
             auto key_pos = vSrc.find(vKey);
             if (key_pos != std::string::npos) {
@@ -304,29 +322,29 @@ private:
         }
         return false;
     }
-    static bool getValueForKey(const std::string& vSrc, const std::string& vKey, double& vOutDoubleValue) {
+    static bool m_getValueForKey(const std::string& vSrc, const std::string& vKey, double& vOutDoubleValue) {
         std::string strValue;
-        if (getValueForKey(vSrc, vKey, strValue)) {
-            return strToDouble(strValue, vOutDoubleValue);
+        if (m_getValueForKey(vSrc, vKey, strValue)) {
+            return m_strToDouble(strValue, vOutDoubleValue);
         }
         return false;
     }
-    static bool getValueForKey(const std::string& vSrc, const std::string& vKey, size_t& vOutSizeTValue) {
+    static bool m_getValueForKey(const std::string& vSrc, const std::string& vKey, size_t& vOutSizeTValue) {
         std::string strValue;
-        if (getValueForKey(vSrc, vKey, strValue)) {
-            return strToSizeT(strValue, vOutSizeTValue);
+        if (m_getValueForKey(vSrc, vKey, strValue)) {
+            return m_strToSizeT(strValue, vOutSizeTValue);
         }
         return false;
     }
-    static bool getValueForKey(const std::string& vSrc, const std::string& vKey, Color& vOutColorValue) {
+    static bool m_getValueForKey(const std::string& vSrc, const std::string& vKey, Color& vOutColorValue) {
         std::string strValue;
-        if (getValueForKey(vSrc, vKey, strValue)) {
+        if (m_getValueForKey(vSrc, vKey, strValue)) {
             double v = 0.0;
-            if (strToDouble(strValue.substr(0, 3), v)) {
+            if (m_strToDouble(strValue.substr(0, 3), v)) {
                 auto r = v / 255.0;
-                if (strToDouble(strValue.substr(3, 3), v)) {
+                if (m_strToDouble(strValue.substr(3, 3), v)) {
                     auto g = v / 255.0;
-                    if (strToDouble(strValue.substr(6), v)) {
+                    if (m_strToDouble(strValue.substr(6), v)) {
                         auto b = v / 255.0;
                         vOutColorValue[0] = r;
                         vOutColorValue[1] = g;
@@ -338,13 +356,13 @@ private:
         }
         return false;
     }
-    static bool isKeyExist(const std::string& vSrc, const std::string& vKey) {
+    static bool m_isKeyExist(const std::string& vSrc, const std::string& vKey) {
         if (!vSrc.empty()) {
             return (vSrc.find(vKey) != std::string::npos);
         }
         return false;
     }
-    static bool replaceString(::std::string& str, const ::std::string& oldStr, const ::std::string& newStr) {
+    static bool m_replaceString(::std::string& str, const ::std::string& oldStr, const ::std::string& newStr) {
         bool found = false;
         size_t pos = 0;
         while ((pos = str.find(oldStr, pos)) != ::std::string::npos) {
@@ -354,7 +372,7 @@ private:
         }
         return found;
     }
-    static std::vector<std::string> splitStringToVector(const std::string& vText, const std::string& vDelimiters, const bool& vPushEmpty) {
+    static std::vector<std::string> m_splitStringToVector(const std::string& vText, const std::string& vDelimiters, const bool& vPushEmpty) {
         std::vector<std::string> arr;
         if (!vText.empty()) {
             size_t start = 0;
@@ -374,7 +392,7 @@ private:
         }
         return arr;
     }
-    static std::vector<int32_t> splitStringToIntVector(const std::string& vText, const std::string& vDelimiters, const bool& vPushEmpty) {
+    static std::vector<int32_t> m_splitStringToIntVector(const std::string& vText, const std::string& vDelimiters, const bool& vPushEmpty) {
         std::vector<int32_t> arr;
         int32_t tmp;
         if (!vText.empty()) {
@@ -383,7 +401,7 @@ private:
             while (end != std::string::npos) {
                 std::string token = vText.substr(start, end - start);
                 if (!token.empty() || (token.empty() && vPushEmpty)) {
-                    if (strToIntT(token, tmp)) {
+                    if (m_strToIntT(token, tmp)) {
                         arr.emplace_back(tmp);
                     }
                 }
@@ -392,20 +410,20 @@ private:
             }
             std::string token = vText.substr(start);
             if (!token.empty() || (token.empty() && vPushEmpty)) {
-                if (strToIntT(token, tmp)) {
+                if (m_strToIntT(token, tmp)) {
                     arr.emplace_back(tmp);
                 }
             }
         }
         return arr;
     }
-    static bool getVertex(const std::string& vSrc, Vertex& vOutVertexValue) {
+    static bool m_getVertex(const std::string& vSrc, Vertex& vOutVertexValue) {
         if (!vSrc.empty()) {
-            auto tokens = splitStringToVector(vSrc, " ", false);
+            auto tokens = m_splitStringToVector(vSrc, " ", false);
             if (tokens.size() == 3U) {
-                if (strToDouble(tokens[0], vOutVertexValue[0])) {
-                    if (strToDouble(tokens[1], vOutVertexValue[1])) {
-                        if (strToDouble(tokens[2], vOutVertexValue[2])) {
+                if (m_strToDouble(tokens[0], vOutVertexValue[0])) {
+                    if (m_strToDouble(tokens[1], vOutVertexValue[1])) {
+                        if (m_strToDouble(tokens[2], vOutVertexValue[2])) {
                             return true;
                         }
                     }
@@ -414,15 +432,15 @@ private:
         }
         return false;
     }
-    static bool getVertexUV(const std::string& vSrc, Vertex& vOutVertexValue, UV& vOutUVValue) {
+    static bool m_getVertexUV(const std::string& vSrc, Vertex& vOutVertexValue, UV& vOutUVValue) {
         if (!vSrc.empty()) {
-            auto tokens = splitStringToVector(vSrc, " ", false);
+            auto tokens = m_splitStringToVector(vSrc, " ", false);
             if (tokens.size() == 5U) {
-                if (strToDouble(tokens[0], vOutVertexValue[0])) {
-                    if (strToDouble(tokens[1], vOutVertexValue[1])) {
-                        if (strToDouble(tokens[2], vOutVertexValue[2])) {
-                            if (strToDouble(tokens[3], vOutUVValue[0])) {
-                                if (strToDouble(tokens[4], vOutUVValue[1])) {
+                if (m_strToDouble(tokens[0], vOutVertexValue[0])) {
+                    if (m_strToDouble(tokens[1], vOutVertexValue[1])) {
+                        if (m_strToDouble(tokens[2], vOutVertexValue[2])) {
+                            if (m_strToDouble(tokens[3], vOutUVValue[0])) {
+                                if (m_strToDouble(tokens[4], vOutUVValue[1])) {
                                     return true;
                                 }
                             }
@@ -433,12 +451,12 @@ private:
         }
         return false;
     }
-    static bool getFaces(const std::string& vSrc, std::vector<Face>& vOutFacesValue) {
+    static bool m_getFaces(const std::string& vSrc, std::vector<Face>& vOutFacesValue) {
         if (!vSrc.empty()) {
             // [-1] N i0 i1 i2 i3 i4 i5 i6 ...
 			// -1 => triangle strip / nothing => triangle fan
             // N => count faces
-            auto tokens = splitStringToIntVector(vSrc, " ", false);
+            auto tokens = m_splitStringToIntVector(vSrc, " ", false);
             if (!tokens.empty()) {
                 int32_t offset = 1;
                 int32_t mode = 1; // triangle fan
@@ -506,7 +524,7 @@ private:
         }
         return false;
     }
-    static std::string loadFileToString(const std::string& vFile) {
+    static std::string m_loadFileToString(const std::string& vFile) {
         std::string res;
         std::ifstream docFile(vFile, std::ios::in);
         if (docFile.is_open()) {
@@ -517,14 +535,14 @@ private:
         }
         return res;
     }
-    static void saveStringToFile(const std::string& vString, const std::string& vFilePathName) {
+    static void m_saveStringToFile(const std::string& vString, const std::string& vFilePathName) {
         std::ofstream fileWriter(vFilePathName, std::ios::out);
         if (!fileWriter.bad()) {
             fileWriter << vString;
             fileWriter.close();
         }
     }
-    static std::string toStr(const char* fmt, ...) {
+    static std::string m_toStr(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         char TempBuffer[3072 + 1];  // 3072 = 1024 * 3
@@ -535,8 +553,8 @@ private:
         }
         return std::string{};
     }
-    static std::string getObjMaterialString(const Material& vMaterial) {
-        auto res = toStr(u8R"(
+    static std::string m_getObjMaterialString(const Material& vMaterial) {
+        auto res = m_toStr(u8R"(
 newmtl %s
 Ns %.6f
 Ka %.6f %.6f %.6f
@@ -557,69 +575,69 @@ illum %u
                          vMaterial.d,                                        //
                          (uint32_t)vMaterial.illum);                         //
         if (!vMaterial.ka_texture.empty()) {
-            res += toStr(u8R"(map_Ka %s\n
+            res += m_toStr(u8R"(map_Ka %s\n
 )",
                          vMaterial.ka_texture.c_str());
         }
         return res;
     }
-    static uint32_t getFaceItemId(const int32_t& vIdx, const uint32_t& vOffset, const uint32_t& vItemCount) {
+    static uint32_t m_getFaceItemId(const int32_t& vIdx, const uint32_t& vOffset, const uint32_t& vItemCount) {
         if (vIdx < 0) {
             return (uint32_t)(vIdx + 1U + vOffset + vItemCount);
         }
         return (uint32_t)(vIdx + 1U + vOffset);
     }
-    static std::string getObjModelString(const Model& vModel, const std::string& vMTLFile, const uint32_t& vVerticeOffset,
+    static std::string m_getObjModelString(const Model& vModel, const std::string& vMTLFile, const uint32_t& vVerticeOffset,
                                          const uint32_t& vUvsOffset) {
         bool have_uvs = !vModel.uvs.empty();
         std::string res;
-        res += toStr("mtllib %s\no %s\n", vMTLFile.c_str(), vModel.name.c_str());
+        res += m_toStr("mtllib %s\no %s\n", vMTLFile.c_str(), vModel.name.c_str());
         for (const auto& vertex : vModel.vertices) {
-            res += toStr("v %.6f %.6f %.6f\n", vertex[0], vertex[1], vertex[2]);
+            res += m_toStr("v %.6f %.6f %.6f\n", vertex[0], vertex[1], vertex[2]);
         }
         for (const auto& uv : vModel.uvs) {
-            res += toStr("vt %.6f %.6f\n", uv[0], uv[1]);
+            res += m_toStr("vt %.6f %.6f\n", uv[0], uv[1]);
         }
-        res += toStr("s %i\n", vModel.smooth_shading ? 1 : 0);
-        res += toStr("usemtl %s\n", vModel.mat.name.c_str());
+        res += m_toStr("s %i\n", vModel.smooth_shading ? 1 : 0);
+        res += m_toStr("usemtl %s\n", vModel.mat.name.c_str());
         auto vertices_count = (uint32_t)vModel.vertices.size();
         auto uvs_count = (uint32_t)vModel.uvs.size();
         for (const auto& face : vModel.faces) {
             if (face.size() == 3U) {
-                const auto& iv0 = getFaceItemId(face[0], vVerticeOffset, vertices_count);
-                const auto& iv1 = getFaceItemId(face[1], vVerticeOffset, vertices_count);
-                const auto& iv2 = getFaceItemId(face[2], vVerticeOffset, vertices_count);
-                const auto& iuv0 = getFaceItemId(face[0], vUvsOffset, uvs_count);
-                const auto& iuv1 = getFaceItemId(face[1], vUvsOffset, uvs_count);
-                const auto& iuv2 = getFaceItemId(face[2], vUvsOffset, uvs_count);
+                const auto& iv0 = m_getFaceItemId(face[0], vVerticeOffset, vertices_count);
+                const auto& iv1 = m_getFaceItemId(face[1], vVerticeOffset, vertices_count);
+                const auto& iv2 = m_getFaceItemId(face[2], vVerticeOffset, vertices_count);
+                const auto& iuv0 = m_getFaceItemId(face[0], vUvsOffset, uvs_count);
+                const auto& iuv1 = m_getFaceItemId(face[1], vUvsOffset, uvs_count);
+                const auto& iuv2 = m_getFaceItemId(face[2], vUvsOffset, uvs_count);
                 if (have_uvs) {
-                    res += toStr("f %u/%u %u/%u %u/%u\n", iv0, iuv0, iv1, iuv1, iv2, iuv2);
+                    res += m_toStr("f %u/%u %u/%u %u/%u\n", iv0, iuv0, iv1, iuv1, iv2, iuv2);
                 } else {
-                    res += toStr("f %u %u %u\n", iv0, iv1, iv2);
+                    res += m_toStr("f %u %u %u\n", iv0, iv1, iv2);
                 }
             } else if (face.size() == 4U) {
-                const auto& iv0 = getFaceItemId(face[0], vVerticeOffset, vertices_count);
-                const auto& iv1 = getFaceItemId(face[1], vVerticeOffset, vertices_count);
-                const auto& iv2 = getFaceItemId(face[2], vVerticeOffset, vertices_count);
-                const auto& iv3 = getFaceItemId(face[3], vVerticeOffset, vertices_count);
-                const auto& iuv0 = getFaceItemId(face[0], vUvsOffset, uvs_count);
-                const auto& iuv1 = getFaceItemId(face[1], vUvsOffset, uvs_count);
-                const auto& iuv2 = getFaceItemId(face[2], vUvsOffset, uvs_count);
-                const auto& iuv3 = getFaceItemId(face[3], vUvsOffset, uvs_count);
+                const auto& iv0 = m_getFaceItemId(face[0], vVerticeOffset, vertices_count);
+                const auto& iv1 = m_getFaceItemId(face[1], vVerticeOffset, vertices_count);
+                const auto& iv2 = m_getFaceItemId(face[2], vVerticeOffset, vertices_count);
+                const auto& iv3 = m_getFaceItemId(face[3], vVerticeOffset, vertices_count);
+                const auto& iuv0 = m_getFaceItemId(face[0], vUvsOffset, uvs_count);
+                const auto& iuv1 = m_getFaceItemId(face[1], vUvsOffset, uvs_count);
+                const auto& iuv2 = m_getFaceItemId(face[2], vUvsOffset, uvs_count);
+                const auto& iuv3 = m_getFaceItemId(face[3], vUvsOffset, uvs_count);
                 if (have_uvs) {
-                    res += toStr("f %u/%u %u/%u %u/%u %u/%u\n", iv0, iuv0, iv1, iuv1, iv2, iuv2, iv3, iuv3);
+                    res += m_toStr("f %u/%u %u/%u %u/%u %u/%u\n", iv0, iuv0, iv1, iuv1, iv2, iuv2, iv3, iuv3);
                 } else {
-                    res += toStr("f %u %u %u %u\n", iv0, iv1, iv2, iv3);
+                    res += m_toStr("f %u %u %u %u\n", iv0, iv1, iv2, iv3);
                 }
             } else {
                 res += "f ";
                 for (const auto& i : face) {
-                    const auto& iv = getFaceItemId(i, vVerticeOffset, vertices_count);
-                    const auto& iuv = getFaceItemId(i, vUvsOffset, uvs_count);
+                    const auto& iv = m_getFaceItemId(i, vVerticeOffset, vertices_count);
+                    const auto& iuv = m_getFaceItemId(i, vUvsOffset, uvs_count);
                     if (have_uvs) {
-                        res += toStr("%u/%u ", iv, iuv);
+                        res += m_toStr("%u/%u ", iv, iuv);
                     } else {
-                        res += toStr("%u ", iv);
+                        res += m_toStr("%u ", iv);
                     }
                 }
                 // possible because the alst char is always a space
